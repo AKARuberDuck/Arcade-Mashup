@@ -27,11 +27,12 @@ Welcome to **Arcade Mashup: Ultra Edition** — a browser-based microgame gauntl
 
 ## 🔧 How to Run Locally
 
-
-1.- git clone ```https://github.com/your-username/arcade-mashup-ultra```
-2.- cd arcade-mashup-ultra
-3.- open ```index.html```
-
+git clone ```https://github.com/your-username/arcade-mashup-ultra```
+-
+cd arcade-mashup-ultra
+-
+open ```index.html```
+---
 Or drop the project into your favorite live-server dev environment.
 
 ## 📜 License
