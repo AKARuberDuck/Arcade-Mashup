@@ -24,11 +24,17 @@ Welcome to **Arcade Mashup: Ultra Edition** — a browser-based microgame gauntl
 
 ## 🔨 How to Run Locally
 
-`git clone https://github.com/your-username/arcade-mashup-ultra`
-cd arcade-mashup-ultra
-open index.html
--
+git clone ```https://github.com/your-username/arcade-mashup-ultra```
+
+```cd arcade-mashup-ultra```
+
+open ```index.html```
+
 Or drop the project into your favorite live-server dev environment.
 
+---
 ## 🙌 Credits
-Built by Samuel + Copilot.
+
+Game by [AKARuberDuck](https://github.com/AKARuberDuck)  
+With help from Microsoft Copilot
+---
