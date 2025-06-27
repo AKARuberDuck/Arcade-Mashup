@@ -1,38 +1,35 @@
+:root {
+  --bg: #111;
+  --fg: #f0f0f0;
+  --accent: #00ffff;
+}
 body {
   margin: 0;
   font-family: monospace;
-  background: #111;
-  color: #f0f0f0;
+  background: var(--bg);
+  color: var(--fg);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+canvas {
+  background: #1e1e1e;
+  border: 2px solid var(--accent);
+}
+#overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+#start-screen, #end-screen, #round-preview {
+  background: rgba(0,0,0,0.85);
+  padding: 2rem;
+  border-radius: 12px;
   text-align: center;
 }
-
-#game-container {
-  position: relative;
-}
-
-canvas {
-  background: #222;
-  display: block;
-  margin: 0 auto;
-  border: 2px solid #555;
-}
-
-#ui-overlay {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-#prompt, #scoreboard {
-  position: absolute;
-  top: 40%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  pointer-events: all;
-}
-
 .hidden {
   display: none;
 }
