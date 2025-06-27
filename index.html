@@ -2,29 +2,48 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Arcade Mashup</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="game-container">
     <canvas id="game-canvas" width="640" height="480"></canvas>
-    <div id="ui-overlay">
-      <h1 id="title">Arcade Mashup</h1>
-      <div id="prompt" class="hidden">
-        <label>Enter your name:</label>
-        <input type="text" id="username-input" maxlength="8" />
-        <button onclick="startGame()">Play</button>
+
+    <div id="overlay">
+      <div id="start-screen">
+        <h1>🎮 Arcade Mashup</h1>
+        <label>Enter initials:</label>
+        <input id="username-input" maxlength="8" />
+        <div>
+          <label><input type="checkbox" id="invert-controls" /> Inverted Controls</label><br />
+          <label><input type="checkbox" id="one-life" /> One-Life Mode</label><br />
+          <label><input type="checkbox" id="glitch-mode" /> Random Glitches</label><br />
+          <label>Theme:
+            <select id="theme-select">
+              <option value="neon">Neon</option>
+              <option value="pixel">Pixel Classic</option>
+              <option value="clean">Clean Vector</option>
+            </select>
+          </label>
+        </div>
+        <button onclick="startGame()">Start</button>
       </div>
-      <div id="scoreboard" class="hidden">
-        <h2>Game Over!</h2>
+
+      <div id="round-preview" class="hidden">
+        <h2 id="round-name"></h2>
+      </div>
+
+      <div id="end-screen" class="hidden">
+        <h2>🏁 Game Over</h2>
         <p id="final-score"></p>
+        <p id="trophies"></p>
         <h3>🏆 Leaderboard</h3>
         <ol id="leaderboard-list"></ol>
         <button onclick="location.reload()">Play Again</button>
       </div>
     </div>
   </div>
+
   <script src="script.js"></script>
 </body>
 </html>
