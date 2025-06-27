@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arcade Mashup</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="game-canvas" width="640" height="480"></canvas>
+    <div id="ui-overlay">
+      <h1 id="title">Arcade Mashup</h1>
+      <div id="prompt" class="hidden">
+        <label>Enter your name:</label>
+        <input type="text" id="username-input" maxlength="8" />
+        <button onclick="startGame()">Play</button>
+      </div>
+      <div id="scoreboard" class="hidden">
+        <h2>Game Over!</h2>
+        <p id="final-score"></p>
+        <h3>🏆 Leaderboard</h3>
+        <ol id="leaderboard-list"></ol>
+        <button onclick="location.reload()">Play Again</button>
+      </div>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
