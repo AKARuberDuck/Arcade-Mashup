@@ -37,4 +37,4 @@ Or drop the project into your favorite live-server dev environment.
 
 Game by [AKARuberDuck](https://github.com/AKARuberDuck)  
 With help from Microsoft Copilot
----
+
