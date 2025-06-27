@@ -3,9 +3,10 @@
   --fg: #f0f0f0;
   --accent: #00ffff;
 }
+
 body {
   margin: 0;
-  font-family: monospace;
+  font-family: 'Orbitron', sans-serif;
   background: var(--bg);
   color: var(--fg);
   display: flex;
@@ -13,23 +14,65 @@ body {
   align-items: center;
   height: 100vh;
 }
+
 canvas {
   background: #1e1e1e;
-  border: 2px solid var(--accent);
+  border: 3px solid var(--accent);
+  image-rendering: pixelated;
 }
+
+#game-container {
+  position: relative;
+}
+
 #overlay {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
   display: flex;
   justify-content: center;
   align-items: center;
+  pointer-events: none;
 }
+
 #start-screen, #end-screen, #round-preview {
-  background: rgba(0,0,0,0.85);
+  background: rgba(0, 0, 0, 0.85);
   padding: 2rem;
   border-radius: 12px;
   text-align: center;
+  pointer-events: auto;
+  box-shadow: 0 0 20px var(--accent);
+  animation: fadeIn 0.5s ease-out;
 }
+
+input, select, button {
+  margin-top: 10px;
+  font-size: 16px;
+  padding: 6px 12px;
+}
+
 .hidden {
   display: none;
+}
+
+#round-name {
+  font-size: 24px;
+  animation: pulse 1s infinite alternate;
+}
+
+ol {
+  list-style: none;
+  padding-left: 0;
+}
+li {
+  margin: 4px 0;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse {
+  from { color: var(--fg); }
+  to { color: var(--accent); }
 }
