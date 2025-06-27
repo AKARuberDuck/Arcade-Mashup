@@ -1,5 +1,5 @@
 # 🎮 Arcade Mashup: Ultra Edition
-
+------
 Welcome to **Arcade Mashup: Ultra Edition** — a browser-based microgame gauntlet featuring ten rapid-fire challenges with glitch twists, inverted controls, and portal-powered mechanics. Built entirely with HTML, CSS, and JavaScript.
 
 ## 🕹️ Play Now
