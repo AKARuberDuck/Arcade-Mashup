@@ -1,6 +1,8 @@
+// 🎮 Canvas Setup
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
 
+// 🧠 Overlay UI Elements
 const startScreen = document.getElementById("start-screen");
 const endScreen = document.getElementById("end-screen");
 const roundPreview = document.getElementById("round-preview");
@@ -16,18 +18,14 @@ const invertToggle = document.getElementById("invert-controls");
 const oneLifeToggle = document.getElementById("one-life");
 const glitchToggle = document.getElementById("glitch-mode");
 
+// 🧩 State Tracking
 let username = "";
 let score = 0;
 let currentRound = 0;
 let oneLifeFailed = false;
 
-const baseMiniGames = [
-  snakeGame, asteroidGame, spinDodgeGame, slalomGame,
-  brickBreaker, lightThePath, magneticMaze, ladderClimb,
-  bombDiffuse, stopTheCar
-];
-
 let miniGames = [];
+
 let activeSettings = {
   inverted: false,
   oneLife: false,
@@ -37,6 +35,7 @@ let activeSettings = {
 function startGame() {
   username = usernameInput.value.trim().toUpperCase();
   if (!username || username.length > 8) return alert("Enter 1–8 character name.");
+
   activeSettings = {
     inverted: invertToggle.checked,
     oneLife: oneLifeToggle.checked,
@@ -45,7 +44,12 @@ function startGame() {
   };
 
   document.body.className = activeSettings.theme;
+
   miniGames = shuffle([...baseMiniGames]);
+  score = 0;
+  currentRound = 0;
+  oneLifeFailed = false;
+
   startScreen.classList.add("hidden");
   runNextRound();
 }
@@ -62,6 +66,7 @@ function runNextRound() {
   setTimeout(() => {
     roundPreview.classList.add("hidden");
     clearCanvas();
+
     miniGames[currentRound](
       () => {
         score++;
@@ -81,10 +86,12 @@ function runNextRound() {
 function endGame() {
   clearCanvas();
   finalScoreText.textContent = `Score: ${score} / ${miniGames.length}`;
+
   const trophies = [];
   if (score === miniGames.length) trophies.push("🏆 Perfect Run");
-  if (activeSettings.oneLife && !oneLifeFailed) trophies.push("❤️ Survived One-Life");
+  if (activeSettings.oneLife && !oneLifeFailed) trophies.push("❤️ One-Life Survivor");
   if (score > 7) trophies.push("🔥 Arcade Pro");
+
   trophiesText.innerHTML = trophies.join(" ");
   saveScore(username, score);
   updateLeaderboard();
@@ -92,8 +99,12 @@ function endGame() {
 }
 function clearCanvas() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.font = "20px monospace";
+  ctx.font = "18px 'Orbitron', sans-serif";
   ctx.fillStyle = "white";
+}
+
+function shuffle(array) {
+  return [...array].sort(() => Math.random() - 0.5);
 }
 
 function saveScore(name, score) {
@@ -114,89 +125,123 @@ function updateLeaderboard() {
     leaderboardList.appendChild(li);
   });
 }
-
-function shuffle(array) {
-  return [...array].sort(() => Math.random() - 0.5);
-}
+// 🎮 Registered Game Rounds (Shuffled on start)
+const baseMiniGames = [
+  snakeGame,
+  asteroidGame,
+  spinDodgeGame,
+  slalomGame,
+  brickBreaker,
+  lightThePath,
+  magneticMaze,
+  ladderClimb,
+  bombDiffuse,
+  stopTheCar
+];
 function snakeGame(onWin, onLose, settings) {
   const box = 20;
   const cols = canvas.width / box;
   const rows = canvas.height / box;
   let dir = { x: 1, y: 0 };
+  let inputLock = false;
+  let tunnelCooldown = 0;
 
   const portals = [
     { x: 2, y: 2, toX: cols - 3, toY: rows - 3 },
     { x: cols - 3, y: rows - 3, toX: 2, toY: 2 }
   ];
 
-  let snake = [{ x: 10, y: 10 }];
-  let food = {
-    x: Math.floor(Math.random() * cols),
-    y: Math.floor(Math.random() * rows)
-  };
+  const snake = [{ x: 10, y: 10 }];
+  let food = generateFood();
   let apples = 0;
-
-  document.addEventListener("keydown", handler);
+  let frame;
   let start = performance.now();
-  let animationId;
 
-  function handler(e) {
+  function generateFood() {
+    const isRotten = Math.random() < 0.25;
+    return {
+      x: Math.floor(Math.random() * cols),
+      y: Math.floor(Math.random() * rows),
+      rotten: isRotten
+    };
+  }
+
+  document.addEventListener("keydown", handleInput);
+
+  function handleInput(e) {
+    if (inputLock) return;
     const inv = settings.inverted ? -1 : 1;
     if (e.key === "ArrowUp" && dir.y === 0) dir = { x: 0, y: -1 * inv };
     if (e.key === "ArrowDown" && dir.y === 0) dir = { x: 0, y: 1 * inv };
     if (e.key === "ArrowLeft" && dir.x === 0) dir = { x: -1 * inv, y: 0 };
     if (e.key === "ArrowRight" && dir.x === 0) dir = { x: 1 * inv, y: 0 };
+    inputLock = true;
+    setTimeout(() => (inputLock = false), 50);
   }
 
   function loop(ts) {
-    if (ts - start > 20000) return finish(true);
-    if ((ts - start) % 200 < 20) {
-      const head = {
-        x: snake[0].x + dir.x,
-        y: snake[0].y + dir.y
-      };
+    const elapsed = ts - start;
+    if (elapsed >= 20000) return finish(apples >= 3);
 
-      // Portal check
-      portals.forEach(p => {
-        if (head.x === p.x && head.y === p.y) {
-          head.x = p.toX;
-          head.y = p.toY;
-        }
-      });
+    if (tunnelCooldown > 0) {
+      tunnelCooldown -= 1;
+      draw(true);
+      frame = requestAnimationFrame(loop);
+      return;
+    }
 
-      if (
-        head.x < 0 || head.x >= cols ||
-        head.y < 0 || head.y >= rows ||
-        snake.some((s, i) => i > 0 && s.x === head.x && s.y === head.y)
-      ) return finish(false);
+    const head = {
+      x: snake[0].x + dir.x,
+      y: snake[0].y + dir.y
+    };
 
-      snake.unshift(head);
-
-      if (head.x === food.x && head.y === food.y) {
-        apples++;
-        if (apples >= 3) return finish(true);
-        food = {
-          x: Math.floor(Math.random() * cols),
-          y: Math.floor(Math.random() * rows)
-        };
-      } else {
-        snake.pop();
+    portals.forEach(p => {
+      if (head.x === p.x && head.y === p.y) {
+        tunnelCooldown = 10;
+        head.x = p.toX;
+        head.y = p.toY;
       }
+    });
+
+    if (
+      head.x < 0 || head.x >= cols ||
+      head.y < 0 || head.y >= rows ||
+      snake.some((s, i) => i > 0 && s.x === head.x && s.y === head.y)
+    ) return finish(false);
+
+    snake.unshift(head);
+
+    if (head.x === food.x && head.y === food.y) {
+      if (food.rotten) {
+        if (settings.glitch && Math.random() < 0.5) dir = { x: -dir.x, y: -dir.y };
+        apples = Math.max(0, apples - 1);
+      } else {
+        apples++;
+      }
+      food = generateFood();
+    } else {
+      snake.pop();
     }
 
     draw();
-    animationId = requestAnimationFrame(loop);
+    frame = requestAnimationFrame(loop);
   }
 
-  function draw() {
+  function draw(tunneling = false) {
     clearCanvas();
-    ctx.fillStyle = "lime";
+    ctx.fillStyle = settings.glitch && Math.random() < 0.03 ? "magenta" : "lime";
     snake.forEach(s => ctx.fillRect(s.x * box, s.y * box, box - 1, box - 1));
 
-    ctx.fillStyle = "red";
-    ctx.fillRect(food.x * box, food.y * box, box - 1, box - 1);
+    // Apples
+    ctx.fillStyle = food.rotten ? "#a020f0" : "red";
+    ctx.fillRect(food.x * box, food.y * box, box - 2, box - 2);
+    if (food.rotten) {
+      ctx.fillStyle = "white";
+      ctx.fillText("💀", food.x * box + 4, food.y * box + 16);
+    }
 
-    ctx.fillStyle = "#00f";
+    // Portals
+    ctx.strokeStyle = "#00f";
     portals.forEach(p => {
       ctx.beginPath();
       ctx.arc(p.x * box + box / 2, p.y * box + box / 2, box / 2, 0, Math.PI * 2);
@@ -205,11 +250,12 @@ function snakeGame(onWin, onLose, settings) {
 
     ctx.fillStyle = "white";
     ctx.fillText(`🍎 ${apples}/3`, 10, 20);
+    if (tunneling) ctx.fillText("🌀 Traveling...", 260, 20);
   }
 
   function finish(success) {
-    cancelAnimationFrame(animationId);
-    document.removeEventListener("keydown", handler);
+    cancelAnimationFrame(frame);
+    document.removeEventListener("keydown", handleInput);
     success ? onWin() : onLose();
   }
 
@@ -217,11 +263,10 @@ function snakeGame(onWin, onLose, settings) {
 }
 function asteroidGame(onWin, onLose, settings) {
   const ship = { x: canvas.width / 2, y: canvas.height - 30 };
-  let bullets = [];
-  let asteroids = [];
+  let bullets = [], asteroids = [];
   let kills = 0;
   const targetKills = 5;
-  let keys = {};
+  const keys = {};
 
   const spawnAsteroids = () => {
     for (let i = 0; i < targetKills; i++) {
@@ -235,16 +280,18 @@ function asteroidGame(onWin, onLose, settings) {
     }
   };
 
-  const shoot = () => {
+  function shoot() {
     bullets.push({ x: ship.x, y: ship.y });
-  };
+  }
 
-  const onKey = (e) => {
+  function onKey(e) {
     keys[e.key] = true;
     if (e.key === " ") shoot();
-  };
+  }
 
-  const onKeyUp = (e) => (keys[e.key] = false);
+  function onKeyUp(e) {
+    keys[e.key] = false;
+  }
 
   document.addEventListener("keydown", onKey);
   document.addEventListener("keyup", onKeyUp);
@@ -255,7 +302,7 @@ function asteroidGame(onWin, onLose, settings) {
 
   function loop(ts) {
     const elapsed = ts - start;
-    if (elapsed >= 20000) return finish(kills >= targetKills);
+    if (elapsed > 20000) return finish(kills >= targetKills);
 
     if (settings.inverted) {
       if (keys["ArrowLeft"]) ship.x += 4;
@@ -265,10 +312,10 @@ function asteroidGame(onWin, onLose, settings) {
       if (keys["ArrowRight"]) ship.x += 4;
     }
 
-    bullets.forEach((b) => (b.y -= 5));
-    bullets = bullets.filter((b) => b.y > 0);
+    bullets.forEach(b => b.y -= 5);
+    bullets = bullets.filter(b => b.y > 0);
 
-    asteroids.forEach((a) => {
+    asteroids.forEach(a => {
       a.x += a.dx;
       a.y += a.dy;
     });
@@ -277,7 +324,7 @@ function asteroidGame(onWin, onLose, settings) {
       asteroids.forEach((a, ai) => {
         const dx = b.x - a.x;
         const dy = b.y - a.y;
-        if (Math.sqrt(dx * dx + dy * dy) < a.r) {
+        if (Math.hypot(dx, dy) < a.r) {
           kills++;
           bullets.splice(bi, 1);
           asteroids.splice(ai, 1);
@@ -285,14 +332,15 @@ function asteroidGame(onWin, onLose, settings) {
       });
     });
 
-    asteroids = asteroids.filter((a) => a.y < canvas.height);
+    asteroids = asteroids.filter(a => a.y < canvas.height);
     draw();
     frame = requestAnimationFrame(loop);
   }
 
   function draw() {
     clearCanvas();
-    if (settings.glitch && Math.random() < 0.01) ctx.setTransform(-1, 0, 0, 1, canvas.width, 0);
+    if (settings.glitch && Math.random() < 0.02) ctx.setTransform(-1, 0, 0, 1, canvas.width, 0);
+
     ctx.fillStyle = "white";
     ctx.beginPath();
     ctx.arc(ship.x, ship.y, 10, 0, Math.PI * 2);
@@ -300,10 +348,10 @@ function asteroidGame(onWin, onLose, settings) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
 
     ctx.fillStyle = "yellow";
-    bullets.forEach((b) => ctx.fillRect(b.x - 2, b.y, 4, 10));
+    bullets.forEach(b => ctx.fillRect(b.x - 2, b.y, 4, 10));
 
     ctx.fillStyle = "gray";
-    asteroids.forEach((a) => {
+    asteroids.forEach(a => {
       ctx.beginPath();
       ctx.arc(a.x, a.y, a.r, 0, Math.PI * 2);
       ctx.fill();
@@ -330,14 +378,13 @@ function spinDodgeGame(onWin, onLose, settings) {
     { x: 320, y: 240, radius: 70, angle: Math.PI / 2, speed: -0.06 }
   ];
 
-  let keys = {};
-  let start = performance.now();
+  const keys = {};
+  const start = performance.now();
   let frame;
 
   function onKey(e) {
     keys[e.key] = true;
   }
-
   function onKeyUp(e) {
     keys[e.key] = false;
   }
@@ -355,9 +402,9 @@ function spinDodgeGame(onWin, onLose, settings) {
     const elapsed = ts - start;
     if (elapsed >= 20000) return finish(true);
 
-    // Movement
     const speed = 3;
     const inv = settings.inverted ? -1 : 1;
+
     if (keys["ArrowLeft"]) player.x += speed * -inv;
     if (keys["ArrowRight"]) player.x += speed * inv;
     if (keys["ArrowUp"]) player.y += speed * -inv;
@@ -366,24 +413,17 @@ function spinDodgeGame(onWin, onLose, settings) {
     player.x = Math.max(0, Math.min(canvas.width, player.x));
     player.y = Math.max(0, Math.min(canvas.height, player.y));
 
-    // Check portal teleport
     if (
       player.canTeleport &&
       Math.hypot(player.x - portal.x, player.y - portal.y) < portal.r + player.r
-    ) {
-      teleport();
-    }
+    ) teleport();
 
-    // Blade updates
-    blades.forEach((b) => (b.angle += b.speed));
+    blades.forEach(b => (b.angle += b.speed));
 
-    for (let b of blades) {
+    for (const b of blades) {
       const bx = b.x + b.radius * Math.cos(b.angle);
       const by = b.y + b.radius * Math.sin(b.angle);
-      const dx = bx - player.x;
-      const dy = by - player.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < player.r + 10) return finish(false);
+      if (Math.hypot(bx - player.x, by - player.y) < player.r + 10) return finish(false);
     }
 
     draw();
@@ -394,17 +434,19 @@ function spinDodgeGame(onWin, onLose, settings) {
     clearCanvas();
 
     if (settings.glitch && Math.random() < 0.01) ctx.setTransform(-1, 0, 0, 1, canvas.width, 0);
+
+    // Player
     ctx.fillStyle = "white";
     ctx.beginPath();
     ctx.arc(player.x, player.y, player.r, 0, Math.PI * 2);
     ctx.fill();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-    // Draw blades
-    blades.forEach((b) => {
+    // Blades
+    ctx.fillStyle = "red";
+    blades.forEach(b => {
       const bx = b.x + b.radius * Math.cos(b.angle);
       const by = b.y + b.radius * Math.sin(b.angle);
-      ctx.fillStyle = "red";
       ctx.beginPath();
       ctx.arc(bx, by, 10, 0, Math.PI * 2);
       ctx.fill();
@@ -421,7 +463,7 @@ function spinDodgeGame(onWin, onLose, settings) {
     }
 
     ctx.fillStyle = "white";
-    ctx.fillText("Avoid the blades! Use portal once →", 10, 20);
+    ctx.fillText("Avoid blades — teleport once ➤", 10, 20);
   }
 
   function finish(success) {
@@ -437,10 +479,7 @@ function slalomGame(onWin, onLose, settings) {
   const player = { x: canvas.width / 2, y: canvas.height - 40, w: 20, h: 20 };
   const flags = [];
   const totalFlags = 7;
-  let keys = {};
-  let passed = 0;
-  let missed = false;
-  let frame;
+  let keys = {}, passed = 0, missed = false, frame;
 
   for (let i = 0; i < totalFlags; i++) {
     flags.push({
@@ -459,14 +498,9 @@ function slalomGame(onWin, onLose, settings) {
     const elapsed = ts - start;
     if (elapsed > 20000) return finish(!missed && passed >= totalFlags);
 
-    if (settings.inverted) {
-      if (keys["ArrowLeft"]) player.x += 4;
-      if (keys["ArrowRight"]) player.x -= 4;
-    } else {
-      if (keys["ArrowLeft"]) player.x -= 4;
-      if (keys["ArrowRight"]) player.x += 4;
-    }
-
+    const inv = settings.inverted ? -1 : 1;
+    if (keys["ArrowLeft"]) player.x += 4 * -inv;
+    if (keys["ArrowRight"]) player.x += 4 * inv;
     player.x = Math.max(0, Math.min(canvas.width - player.w, player.x));
 
     flags.forEach(f => {
@@ -619,8 +653,7 @@ function lightThePath(onWin, onLose, settings) {
   const grid = [];
   const rows = 3, cols = 3;
   const size = 100;
-  let pattern = [];
-  let input = [];
+  let pattern = [], input = [];
   let clickable = false;
   const offsetX = 120, offsetY = 80;
 
@@ -635,7 +668,7 @@ function lightThePath(onWin, onLose, settings) {
   }
 
   const highlightOrder = settings.glitch && Math.random() < 0.3
-    ? [8, 4, 0, 6] // reversed hardcoded glitch pattern
+    ? [8, 4, 0, 6] // glitch reversal!
     : Array.from({ length: 4 }, () =>
         grid[Math.floor(Math.random() * grid.length)].id
       );
@@ -678,7 +711,7 @@ function lightThePath(onWin, onLose, settings) {
 
   function draw(activeId) {
     clearCanvas();
-    ctx.font = "18px monospace";
+    ctx.font = "18px 'Orbitron', sans-serif";
     grid.forEach(tile => {
       let lit = pattern.includes(tile.id) && !clickable;
       if (activeId !== undefined && tile.id === activeId) lit = true;
@@ -867,29 +900,21 @@ function bombDiffuse(onWin, onLose, settings) {
 
   let glitchMap = settings.glitch
     ? {
-        "1": "7",
-        "2": "5",
-        "3": "9",
-        "4": "0",
-        "5": "2",
-        "6": "1",
-        "7": "4",
-        "8": "3",
-        "9": "6",
-        "0": "8"
+        "1": "7", "2": "5", "3": "9", "4": "0",
+        "5": "2", "6": "1", "7": "4", "8": "3",
+        "9": "6", "0": "8"
       }
     : null;
 
   function onKey(e) {
     if (input.length >= code.length) return;
-
     let key = e.key;
     if (!/^[0-9]$/.test(key)) return;
 
     let shown = key;
     if (glitchMap && glitchMap[key]) {
-      key = glitchMap[key]; // Real value
-      shown = glitchMap[key] + "?"; // Confusing display
+      key = glitchMap[key];           // Actual digit logic
+      shown = glitchMap[key] + "?";   // Display misleading hint
     }
 
     input.push(Number(key));
@@ -897,7 +922,6 @@ function bombDiffuse(onWin, onLose, settings) {
 
     if (input[input.length - 1] !== code[input.length - 1]) return finish(false);
     if (input.length === code.length) return finish(true);
-
     draw();
   }
 
@@ -910,7 +934,6 @@ function bombDiffuse(onWin, onLose, settings) {
 
     ctx.fillStyle = "lime";
     ctx.fillText("Input: " + displayInput.padEnd(code.length * 2, "_ "), 200, 200);
-    ctx.fillStyle = "white";
   }
 
   function finish(success) {
@@ -969,7 +992,7 @@ function stopTheCar(onWin, onLose, settings) {
       car.stopped = true;
 
       if (settings.glitch && Math.random() < 0.3) {
-        // fake "braking delay" in glitch mode
+        // Fake "braking delay" in glitch mode
         setTimeout(() => evaluateStop(), 500);
       } else {
         evaluateStop();
@@ -983,9 +1006,8 @@ function stopTheCar(onWin, onLose, settings) {
 
   function evaluateStop() {
     const finalX = car.x + 50;
-    const threshold = 12;
     const delta = Math.abs(finalX - (stopLine + glitchOffset));
-    if (delta <= threshold) finish(true);
+    if (delta <= 12) finish(true);
     else finish(false);
   }
 
